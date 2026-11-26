@@ -3,4 +3,9 @@
     <string name="tickers_load_error">Couldn’t load tickers.</string>
     <string name="tickers_retry">Retry</string>
     <string name="tickers_empty">No tickers found.</string>
+    <string name="quote_placeholder">-</string>
+    <string name="quote_number">%1$.2f</string>
+    <string name="quote_percent">%1$.2f%%</string>
+    <string name="quote_exchange_and_name">%1$s | %2$s</string>
+    <string name="quote_price_and_change">%1$s (%2$s)</string>
 </resources>

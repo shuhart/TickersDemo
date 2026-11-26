@@ -12,6 +12,8 @@ android {
 
 dependencies {
     implementation(project(":data"))
+    implementation(libs.coroutines.core)
     implementation(libs.gson)
+    implementation(libs.okhttp)
     implementation(libs.retrofit)
 }

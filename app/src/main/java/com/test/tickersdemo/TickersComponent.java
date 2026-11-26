@@ -3,6 +3,7 @@ package com.test.tickersdemo;
 import com.google.gson.Gson;
 import com.test.tickersdemo.network.TickersRepository;
 import com.test.tickersdemo.network.TradernetApi;
+import com.test.tickersdemo.network.TradernetQuoteStream;
 import com.test.tickersdemo.ui.TickersViewModel;
 import dagger.Component;
 import dagger.Module;
@@ -52,8 +53,15 @@ interface TickersComponent {
         }
 
         @Provides
-        static TickersViewModel tickersViewModel(TickersRepository repository) {
-            return new TickersViewModel(repository);
+        static TradernetQuoteStream tradernetQuoteStream(OkHttpClient client, Gson gson) {
+            return new TradernetQuoteStream(client, gson);
+        }
+
+        @Provides
+        static TickersViewModel tickersViewModel(
+                TickersRepository repository, TradernetQuoteStream quotes
+        ) {
+            return new TickersViewModel(repository, quotes);
         }
     }
 }
