@@ -51,7 +51,7 @@ class TradernetQuoteStream(
                         logger.warn("Tradernet WebSocket message (invalid JSON)\n$text", e)
                         return
                     }
-                    logger.debugJson("Tradernet WebSocket message", message)
+//                    logger.debugJson("Tradernet WebSocket message", message)
                     val quote = parseQuote(message) ?: return
                     val delivery = trySend(quote)
                     if (delivery.isFailure && !delivery.isClosed) {

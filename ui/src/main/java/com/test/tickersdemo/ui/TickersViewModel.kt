@@ -51,7 +51,6 @@ class TickersViewModel(
 
             mutableState.subscriptionCount
                 .map { it > 0 }
-                .distinctUntilChanged()
                 .collectLatest { active ->
                     if (!active) return@collectLatest
                     quoteStream.observe(subscription).collect { quote ->
@@ -66,9 +65,13 @@ class TickersViewModel(
                                 return@update current
                             }
 
-                            loaded.copy(
+                            val updated = loaded.copy(
                                 tickers = loaded.tickers.map { if (it.symbol == symbol) it.update(quote) else it },
                             )
+
+                            logger.debug("Updated ticker: $symbol. Old price ${ticker.lastPrice}, new price ${quote.lastPrice}")
+
+                            updated
                         }
                     }
                 }

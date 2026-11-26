@@ -171,16 +171,19 @@ private fun QuotePercent(ticker: TickerUiModel) {
     val text = percent?.let { stringResource(R.string.quote_percent, it) }
         ?: stringResource(R.string.quote_placeholder)
     val darkSurface = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    val restingColor = when {
-        percent == null -> LocalContentColor.current
-        percent > 0 -> if (darkSurface) Color(0xFF73D9A0) else Color(0xFF167044)
-        else -> if (darkSurface) Color(0xFFFFB4AB) else Color(0xFFB3261E)
+    val green = Color(0xFF167044)
+    val red = Color(0xFFB3261E)
+    val isUp = flash?.increased ?: percent?.let { it > 0 }
+    val restingColor = when (isUp) {
+        true -> if (darkSurface) Color(0xFF73D9A0) else green
+        false -> if (darkSurface) Color(0xFFFFB4AB) else red
+        null -> LocalContentColor.current
     }
     val opacity = flashOpacity.value
     val color = lerp(restingColor, Color.White, opacity)
     val background = when (flash?.increased) {
-        true -> Color(0xFF167044).copy(alpha = opacity)
-        false -> Color(0xFFB3261E).copy(alpha = opacity)
+        true -> green.copy(alpha = opacity)
+        false -> red.copy(alpha = opacity)
         null -> Color.Transparent
     }
     Text(
