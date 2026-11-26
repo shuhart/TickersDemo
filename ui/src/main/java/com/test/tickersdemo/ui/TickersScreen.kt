@@ -71,12 +71,12 @@ fun TickersScreen(viewModel: TickersViewModel, modifier: Modifier = Modifier) {
                         Text(stringResource(R.string.tickers_retry))
                     }
                 }
-                is TickersState.Loaded -> if (current.tickers.isEmpty()) {
+                is TickersState.Loaded -> if (current.rows.isEmpty()) {
                     Text(stringResource(R.string.tickers_empty))
                 } else {
                     LazyColumn(Modifier.fillMaxSize()) {
-                        items(current.tickers) { ticker ->
-                            TickerRow(ticker)
+                        items(current.rows) { row ->
+                            TickerRow(row.ticker)
                             HorizontalDivider()
                         }
                     }

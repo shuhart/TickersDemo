@@ -9,9 +9,7 @@ import java.io.IOException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class TickersViewModel(
@@ -57,22 +55,16 @@ class TickersViewModel(
                         val symbol = quote.symbol ?: return@collect
                         val revision = quote.rev ?: return@collect
 
-                        mutableState.update { current ->
-                            val loaded = current as? TickersState.Loaded ?: return@update current
-                            val ticker = loaded.tickers.firstOrNull { it.symbol == symbol } ?: return@update current
-                            if (ticker.rev == revision) {
-                                logger.debug("Ignored $symbol ticker update as the same revision has already been processed")
-                                return@update current
-                            }
-
-                            val updated = loaded.copy(
-                                tickers = loaded.tickers.map { if (it.symbol == symbol) it.update(quote) else it },
-                            )
-
-                            logger.debug("Updated ticker: $symbol. Old price ${ticker.lastPrice}, new price ${quote.lastPrice}")
-
-                            updated
+                        val loaded = mutableState.value as? TickersState.Loaded ?: return@collect
+                        val row = loaded.rowFor(symbol) ?: return@collect
+                        val ticker = row.ticker
+                        if (ticker.rev == revision) {
+                            logger.debug("Ignored $symbol ticker update as the same revision has already been processed")
+                            return@collect
                         }
+
+                        row.update(quote)
+                        logger.debug("Updated ticker: $symbol. Old price ${ticker.lastPrice}, new price ${quote.lastPrice}")
                     }
                 }
         }
@@ -82,5 +74,12 @@ class TickersViewModel(
 internal sealed interface TickersState {
     data object Loading : TickersState
     data object Error : TickersState
-    data class Loaded(val tickers: List<TickerUiModel>) : TickersState
+    class Loaded(tickers: List<TickerUiModel>) : TickersState {
+        private val rowsBySymbol = mutableMapOf<String, TickerRowState>()
+        val rows = tickers.map { ticker ->
+            rowsBySymbol.getOrPut(ticker.symbol) { TickerRowState(ticker) }
+        }
+
+        fun rowFor(symbol: String): TickerRowState? = rowsBySymbol[symbol]
+    }
 }

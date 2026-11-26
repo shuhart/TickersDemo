@@ -1,5 +1,8 @@
 package com.test.tickersdemo.ui
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import com.test.tickersdemo.data.TickerQuote
 
 internal data class TickerUiModel(
@@ -31,3 +34,12 @@ internal data class TickerUiModel(
 }
 
 internal class PriceFlash(val increased: Boolean)
+
+internal class TickerRowState(initialTicker: TickerUiModel) {
+    var ticker by mutableStateOf(initialTicker)
+        private set
+
+    fun update(quote: TickerQuote) {
+        ticker = ticker.update(quote)
+    }
+}
