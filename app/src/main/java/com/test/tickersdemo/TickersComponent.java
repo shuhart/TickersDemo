@@ -1,6 +1,7 @@
 package com.test.tickersdemo;
 
 import com.google.gson.Gson;
+import com.test.tickersdemo.core.Logger;
 import com.test.tickersdemo.network.TickersRepository;
 import com.test.tickersdemo.network.TradernetApi;
 import com.test.tickersdemo.network.TradernetQuoteStream;
@@ -38,6 +39,12 @@ interface TickersComponent {
 
         @Provides
         @Singleton
+        static Logger logger(Gson gson) {
+            return new Logger(gson);
+        }
+
+        @Provides
+        @Singleton
         static TradernetApi tradernetApi(OkHttpClient client, Gson gson) {
             return new Retrofit.Builder()
                     .baseUrl("https://tradernet.com/")
@@ -53,15 +60,15 @@ interface TickersComponent {
         }
 
         @Provides
-        static TradernetQuoteStream tradernetQuoteStream(OkHttpClient client, Gson gson) {
-            return new TradernetQuoteStream(client, gson);
+        static TradernetQuoteStream tradernetQuoteStream(OkHttpClient client, Gson gson, Logger logger) {
+            return new TradernetQuoteStream(client, gson, logger);
         }
 
         @Provides
         static TickersViewModel tickersViewModel(
-                TickersRepository repository, TradernetQuoteStream quotes
+                TickersRepository repository, TradernetQuoteStream quotes, Logger logger
         ) {
-            return new TickersViewModel(repository, quotes);
+            return new TickersViewModel(repository, quotes, logger);
         }
     }
 }

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.test.tickersdemo.data.Ticker
 import com.test.tickersdemo.data.TickerQuote
+import com.test.tickersdemo.core.Logger
 import com.test.tickersdemo.network.TickersRepository
 import com.test.tickersdemo.network.TradernetQuoteStream
 import java.io.IOException
@@ -17,6 +18,7 @@ import kotlinx.coroutines.launch
 class TickersViewModel(
     private val repository: TickersRepository,
     private val quoteStream: TradernetQuoteStream,
+    private val logger: Logger,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow<TickersState>(TickersState.Loading)
     internal val state = mutableState.asStateFlow()
@@ -35,12 +37,14 @@ class TickersViewModel(
         viewModelScope.launch {
             val tickers = try {
                 repository.fetchTopSecurities()
-            } catch (_: IOException) {
+            } catch (e: IOException) {
+                logger.warn("Could not load top tickers", e)
                 mutableState.value = TickersState.Error
                 return@launch
             }
             var loaded = TickersState.Loaded(tickers)
             mutableState.value = loaded
+            logger.debug("Loaded ${tickers.size} top tickers")
 
             val symbols = tickers.map { it.symbol }.toSet()
             if (symbols.isEmpty()) return@launch
@@ -87,11 +91,6 @@ internal data class DisplayQuote(
         val plainStyle = percent?.let { if (it > 0) PercentStyle.Green else PercentStyle.Red }
         val style = when {
             percentStyle == null -> plainStyle
-            quote.direction == "D" -> PercentStyle.RedBackground
-            quote.direction == "U" -> PercentStyle.GreenBackground
-            quote.direction == "" &&
-                (percentStyle == PercentStyle.RedBackground || percentStyle == PercentStyle.GreenBackground) ->
-                plainStyle
             else -> percentStyle
         }
         return copy(

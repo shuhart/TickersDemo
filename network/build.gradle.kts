@@ -12,6 +12,7 @@ android {
 
 dependencies {
     implementation(project(":data"))
+    implementation(project(":core"))
     implementation(libs.coroutines.core)
     implementation(libs.gson)
     implementation(libs.okhttp)

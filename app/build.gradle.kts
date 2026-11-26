@@ -32,6 +32,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":core"))
     implementation(project(":network"))
     implementation(project(":ui"))
     implementation(libs.dagger)

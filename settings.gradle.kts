@@ -37,4 +37,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "TickersDemo"
-include(":app", ":data", ":network", ":ui")
+include(":app", ":data", ":core", ":network", ":ui")

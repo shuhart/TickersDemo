@@ -16,6 +16,7 @@ android {
 
 dependencies {
     implementation(project(":data"))
+    implementation(project(":core"))
     implementation(project(":network"))
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.material3)

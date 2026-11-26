@@ -7,6 +7,5 @@ data class TickerQuote(
     @SerializedName("pcp") val percentChange: Double?,
     @SerializedName("ltr") val exchange: String?,
     @SerializedName("ltp") val lastPrice: Double?,
-    @SerializedName("chg") val priceChange: Double?,
-    @SerializedName("ltc") val direction: String?,
+    @SerializedName("chg") val priceChange: Double?
 )
