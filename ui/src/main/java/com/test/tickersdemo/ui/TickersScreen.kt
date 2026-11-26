@@ -38,7 +38,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
-import com.test.tickersdemo.data.Ticker
 
 @Composable
 fun TickersScreen(viewModel: TickersViewModel, modifier: Modifier = Modifier) {
@@ -67,7 +66,7 @@ fun TickersScreen(viewModel: TickersViewModel, modifier: Modifier = Modifier) {
                 } else {
                     LazyColumn(Modifier.fillMaxSize()) {
                         items(current.tickers) { ticker ->
-                            TickerRow(ticker, current.quotes[ticker.symbol])
+                            TickerRow(ticker)
                             HorizontalDivider()
                         }
                     }
@@ -78,11 +77,11 @@ fun TickersScreen(viewModel: TickersViewModel, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun TickerRow(ticker: Ticker, quote: DisplayQuote?) {
+private fun TickerRow(ticker: TickerUiModel) {
     val placeholder = stringResource(R.string.quote_placeholder)
-    val exchange = quote?.exchange?.takeIf { it.isNotBlank() } ?: placeholder
-    val price = quote?.lastPrice?.let { stringResource(R.string.quote_number, it) } ?: placeholder
-    val change = quote?.priceChange?.let { stringResource(R.string.quote_number, it) } ?: placeholder
+    val exchange = ticker.exchange?.takeIf { it.isNotBlank() } ?: placeholder
+    val price = ticker.lastPrice?.let { stringResource(R.string.quote_number, it) } ?: placeholder
+    val change = ticker.priceChange?.let { stringResource(R.string.quote_number, it) } ?: placeholder
 
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
@@ -103,7 +102,7 @@ private fun TickerRow(ticker: Ticker, quote: DisplayQuote?) {
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                QuotePercent(quote)
+                QuotePercent(ticker)
             }
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -145,18 +144,18 @@ private fun TickerLogo(symbol: String) {
 }
 
 @Composable
-private fun QuotePercent(quote: DisplayQuote?) {
-    val text = quote?.percentChange?.let { stringResource(R.string.quote_percent, it) }
+private fun QuotePercent(ticker: TickerUiModel) {
+    val text = ticker.percentChange?.let { stringResource(R.string.quote_percent, it) }
         ?: stringResource(R.string.quote_placeholder)
     val darkSurface = MaterialTheme.colorScheme.surface.luminance() < 0.5f
     val green = Color(0xFF167044)
     val red = Color(0xFFB3261E)
-    val background = when (quote?.percentStyle) {
+    val background = when (ticker.percentStyle) {
         PercentStyle.GreenBackground -> green
         PercentStyle.RedBackground -> red
         else -> Color.Unspecified
     }
-    val color = when (quote?.percentStyle) {
+    val color = when (ticker.percentStyle) {
         PercentStyle.GreenBackground, PercentStyle.RedBackground -> Color.White
         PercentStyle.Green -> if (darkSurface) Color(0xFF73D9A0) else green
         PercentStyle.Red -> if (darkSurface) Color(0xFFFFB4AB) else red

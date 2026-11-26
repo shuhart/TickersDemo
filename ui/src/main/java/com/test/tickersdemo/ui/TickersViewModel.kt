@@ -2,8 +2,6 @@ package com.test.tickersdemo.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.test.tickersdemo.data.Ticker
-import com.test.tickersdemo.data.TickerQuote
 import com.test.tickersdemo.core.Logger
 import com.test.tickersdemo.network.TickersRepository
 import com.test.tickersdemo.network.TradernetQuoteStream
@@ -13,6 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class TickersViewModel(
@@ -42,13 +41,13 @@ class TickersViewModel(
                 mutableState.value = TickersState.Error
                 return@launch
             }
-            var loaded = TickersState.Loaded(tickers)
-            mutableState.value = loaded
+            mutableState.value = TickersState.Loaded(
+                tickers.map { TickerUiModel(symbol = it.symbol, name = it.name) }
+            )
             logger.debug("Loaded ${tickers.size} top tickers")
 
-            val symbols = tickers.map { it.symbol }.toSet()
-            if (symbols.isEmpty()) return@launch
-            val subscription = symbols.toList()
+            val subscription = tickers.map { it.symbol }.distinct()
+            if (subscription.isEmpty()) return@launch
 
             mutableState.subscriptionCount
                 .map { it > 0 }
@@ -56,11 +55,20 @@ class TickersViewModel(
                 .collectLatest { active ->
                     if (!active) return@collectLatest
                     quoteStream.observe(subscription).collect { quote ->
-                        val symbol = quote.symbol
-                        if (symbol != null && symbol in symbols) {
-                            val display = loaded.quotes[symbol] ?: DisplayQuote()
-                            loaded = loaded.copy(quotes = loaded.quotes + (symbol to display.update(quote)))
-                            mutableState.value = loaded
+                        val symbol = quote.symbol ?: return@collect
+                        val revision = quote.rev ?: return@collect
+
+                        mutableState.update { current ->
+                            val loaded = current as? TickersState.Loaded ?: return@update current
+                            val ticker = loaded.tickers.firstOrNull { it.symbol == symbol } ?: return@update current
+                            if (ticker.rev == revision) {
+                                logger.debug("Ignored $symbol ticker update as the same revision has already been processed")
+                                return@update current
+                            }
+
+                            loaded.copy(tickers = loaded.tickers.map {
+                                if (it.symbol == symbol) it.update(quote) else it
+                            })
                         }
                     }
                 }
@@ -71,34 +79,5 @@ class TickersViewModel(
 internal sealed interface TickersState {
     data object Loading : TickersState
     data object Error : TickersState
-    data class Loaded(
-        val tickers: List<Ticker>,
-        val quotes: Map<String, DisplayQuote> = emptyMap(),
-    ) : TickersState
-}
-
-internal enum class PercentStyle { GreenBackground, RedBackground, Green, Red }
-
-internal data class DisplayQuote(
-    val percentChange: Double? = null,
-    val exchange: String? = null,
-    val lastPrice: Double? = null,
-    val priceChange: Double? = null,
-    val percentStyle: PercentStyle? = null,
-) {
-    fun update(quote: TickerQuote): DisplayQuote {
-        val percent = quote.percentChange ?: percentChange
-        val plainStyle = percent?.let { if (it > 0) PercentStyle.Green else PercentStyle.Red }
-        val style = when {
-            percentStyle == null -> plainStyle
-            else -> percentStyle
-        }
-        return copy(
-            percentChange = percent,
-            exchange = quote.exchange ?: exchange,
-            lastPrice = quote.lastPrice ?: lastPrice,
-            priceChange = quote.priceChange ?: priceChange,
-            percentStyle = style,
-        )
-    }
+    data class Loaded(val tickers: List<TickerUiModel>) : TickersState
 }
