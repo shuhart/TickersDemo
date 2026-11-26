@@ -22,7 +22,8 @@ internal data class TickerUiModel(
             percentStyle == null -> plainStyle
             lastPrice != null && newPrice != null -> when {
                 lastPrice < newPrice -> PercentStyle.GreenBackground
-                else -> PercentStyle.RedBackground
+                lastPrice > newPrice -> PercentStyle.RedBackground
+                else -> plainStyle
             }
             else -> percentStyle
         }
