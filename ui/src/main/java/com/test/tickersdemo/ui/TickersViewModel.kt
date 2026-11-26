@@ -66,9 +66,9 @@ class TickersViewModel(
                                 return@update current
                             }
 
-                            loaded.copy(tickers = loaded.tickers.map {
-                                if (it.symbol == symbol) it.update(quote) else it
-                            })
+                            loaded.copy(
+                                tickers = loaded.tickers.map { if (it.symbol == symbol) it.update(quote) else it },
+                            )
                         }
                     }
                 }

@@ -21,14 +21,15 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -45,8 +46,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 fun TickersScreen(viewModel: TickersViewModel, modifier: Modifier = Modifier) {
@@ -154,43 +155,40 @@ private fun TickerLogo(symbol: String) {
 
 @Composable
 private fun QuotePercent(ticker: TickerUiModel) {
-    val currentTicker by rememberUpdatedState(ticker)
-    val flash = remember(ticker.symbol) { Animatable(0f) }
-    LaunchedEffect(ticker.symbol) {
-        snapshotFlow { currentTicker.lastPrice to currentTicker.percentStyle }
-            .drop(1)
-            .collectLatest { (_, style) ->
-                when (style) {
-                    PercentStyle.GreenBackground, PercentStyle.RedBackground -> {
-                        flash.snapTo(0.16f)
-                        flash.animateTo(0f, tween(durationMillis = 320, easing = LinearOutSlowInEasing))
-                    }
-                    else -> flash.snapTo(0f)
-                }
-            }
+    val flash = ticker.priceFlash
+    var previousFlash by remember(ticker.symbol) { mutableStateOf(flash) }
+    val flashOpacity = remember(ticker.symbol, flash) { Animatable(0f) }
+    LaunchedEffect(flashOpacity) {
+        if (flash != null && flash != previousFlash) {
+            previousFlash = flash
+            flashOpacity.snapTo(1f)
+            delay(1000.milliseconds)
+            flashOpacity.animateTo(0f, tween(durationMillis = 1000, easing = LinearOutSlowInEasing))
+        }
     }
 
-    val text = ticker.percentChange?.let { stringResource(R.string.quote_percent, it) }
+    val percent = ticker.percentChange
+    val text = percent?.let { stringResource(R.string.quote_percent, it) }
         ?: stringResource(R.string.quote_placeholder)
     val darkSurface = MaterialTheme.colorScheme.surface.luminance() < 0.5f
-    val green = Color(0xFF167044)
-    val red = Color(0xFFB3261E)
-    val background = when (ticker.percentStyle) {
-        PercentStyle.GreenBackground -> green
-        PercentStyle.RedBackground -> red
-        else -> Color.Unspecified
+    val restingColor = when {
+        percent == null -> LocalContentColor.current
+        percent > 0 -> if (darkSurface) Color(0xFF73D9A0) else Color(0xFF167044)
+        else -> if (darkSurface) Color(0xFFFFB4AB) else Color(0xFFB3261E)
     }
-    val color = when (ticker.percentStyle) {
-        PercentStyle.GreenBackground, PercentStyle.RedBackground -> Color.White
-        PercentStyle.Green -> if (darkSurface) Color(0xFF73D9A0) else green
-        PercentStyle.Red -> if (darkSurface) Color(0xFFFFB4AB) else red
-        null -> Color.Unspecified
+    val opacity = flashOpacity.value
+    val color = lerp(restingColor, Color.White, opacity)
+    val background = when (flash?.increased) {
+        true -> Color(0xFF167044).copy(alpha = opacity)
+        false -> Color(0xFFB3261E).copy(alpha = opacity)
+        null -> Color.Transparent
     }
-    val modifier = if (background == Color.Unspecified) {
-        Modifier
-    } else {
-        Modifier.background(lerp(background, Color.White, flash.value), RoundedCornerShape(6.dp))
-            .padding(horizontal = 6.dp)
-    }
-    Text(text = text, modifier = modifier, color = color, fontSize = 28.sp, lineHeight = 34.sp)
+    Text(
+        text = text,
+        modifier = Modifier.background(background, RoundedCornerShape(6.dp))
+            .padding(horizontal = 4.dp),
+        color = color,
+        fontSize = 28.sp,
+        lineHeight = 34.sp,
+    )
 }
