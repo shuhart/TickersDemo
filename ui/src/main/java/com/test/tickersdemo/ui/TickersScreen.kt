@@ -1,6 +1,9 @@
 package com.test.tickersdemo.ui
 
 import android.net.Uri
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -13,19 +16,23 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -38,6 +45,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.drop
 
 @Composable
 fun TickersScreen(viewModel: TickersViewModel, modifier: Modifier = Modifier) {
@@ -145,6 +154,22 @@ private fun TickerLogo(symbol: String) {
 
 @Composable
 private fun QuotePercent(ticker: TickerUiModel) {
+    val currentTicker by rememberUpdatedState(ticker)
+    val flash = remember(ticker.symbol) { Animatable(0f) }
+    LaunchedEffect(ticker.symbol) {
+        snapshotFlow { currentTicker.lastPrice to currentTicker.percentStyle }
+            .drop(1)
+            .collectLatest { (_, style) ->
+                when (style) {
+                    PercentStyle.GreenBackground, PercentStyle.RedBackground -> {
+                        flash.snapTo(0.16f)
+                        flash.animateTo(0f, tween(durationMillis = 320, easing = LinearOutSlowInEasing))
+                    }
+                    else -> flash.snapTo(0f)
+                }
+            }
+    }
+
     val text = ticker.percentChange?.let { stringResource(R.string.quote_percent, it) }
         ?: stringResource(R.string.quote_placeholder)
     val darkSurface = MaterialTheme.colorScheme.surface.luminance() < 0.5f
@@ -164,7 +189,8 @@ private fun QuotePercent(ticker: TickerUiModel) {
     val modifier = if (background == Color.Unspecified) {
         Modifier
     } else {
-        Modifier.background(background, RoundedCornerShape(6.dp)).padding(horizontal = 6.dp)
+        Modifier.background(lerp(background, Color.White, flash.value), RoundedCornerShape(6.dp))
+            .padding(horizontal = 6.dp)
     }
     Text(text = text, modifier = modifier, color = color, fontSize = 28.sp, lineHeight = 34.sp)
 }
