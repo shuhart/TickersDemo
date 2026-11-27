@@ -162,7 +162,6 @@ private fun QuotePercent(ticker: TickerUiModel) {
         if (flash != null && flash != previousFlash) {
             previousFlash = flash
             flashOpacity.snapTo(1f)
-            delay(1000.milliseconds)
             flashOpacity.animateTo(0f, tween(durationMillis = 1000, easing = LinearOutSlowInEasing))
         }
     }

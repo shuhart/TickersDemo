@@ -19,6 +19,10 @@ class Logger(gson: Gson) {
         Log.w(TAG, message, cause)
     }
 
+    fun warn(message: String) {
+        Log.w(TAG, message)
+    }
+
     private companion object {
         const val TAG = "TickersDemo"
     }

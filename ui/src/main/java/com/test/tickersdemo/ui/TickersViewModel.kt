@@ -3,6 +3,7 @@ package com.test.tickersdemo.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.test.tickersdemo.core.Logger
+import com.test.tickersdemo.data.TickerQuote
 import com.test.tickersdemo.network.TickersRepository
 import com.test.tickersdemo.network.TradernetQuoteStream
 import java.io.IOException
@@ -63,11 +64,45 @@ class TickersViewModel(
                             return@collect
                         }
 
-                        row.update(quote)
-                        logger.debug("Updated ticker: $symbol. Old price ${ticker.lastPrice}, new price ${quote.lastPrice}")
+                        if (quote.lastDealPrice == null || quote.priceChangeSinceLastClosing == null ||
+                            quote.percentChangeSinceLastClosing == null) {
+                            logger.warn(
+                                "Anomaly ticker: $symbol. Old price ${ticker.lastPrice}, new price (ltp) ${quote.lastDealPrice}, " +
+                                        "old % ${ticker.percentChange}, new % (pcp) ${quote.percentChangeSinceLastClosing}, " +
+                                        "new price change (chg) ${quote.priceChangeSinceLastClosing}"
+                            )
+                        }
+
+                        // not sure what to do with this case, ignoring for now...
+                        if (quote.lastDealPrice == null && quote.priceChangeSinceLastClosing == null &&
+                            quote.percentChangeSinceLastClosing == null) {
+                            logger.warn("Update for ticker $symbol without either prices present. Ignoring")
+                            return@collect
+                        }
+
+                        updateRow(row, quote)
                     }
                 }
         }
+    }
+
+    private fun updateRow(rowState: TickerRowState, quote: TickerQuote) {
+        val newPrice = quote.lastDealPrice
+        val oldTicker = rowState.ticker
+        val newFlash = if (oldTicker.lastPrice != null && newPrice != null && newPrice != oldTicker.lastPrice) {
+            PriceFlash(increased = newPrice > oldTicker.lastPrice)
+        } else {
+            null
+        }
+        val newTicker = oldTicker.copy(
+            percentChange = quote.percentChangeSinceLastClosing ?: oldTicker.percentChange,
+            exchange = quote.stockExchange ?: oldTicker.exchange,
+            lastPrice = newPrice ?: oldTicker.lastPrice,
+            priceChange = quote.priceChangeSinceLastClosing ?: oldTicker.priceChange,
+            rev = quote.rev,
+            priceFlash = newFlash,
+        )
+        rowState.update(newTicker)
     }
 }
 

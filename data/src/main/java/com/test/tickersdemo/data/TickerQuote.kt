@@ -4,9 +4,9 @@ import com.google.gson.annotations.SerializedName
 
 data class TickerQuote(
     @SerializedName("c") val symbol: String?,
-    @SerializedName("pcp") val percentChange: Double?,
-    @SerializedName("ltr") val exchange: String?,
-    @SerializedName("ltp") val lastPrice: Double?,
-    @SerializedName("chg") val priceChange: Double?,
+    @SerializedName("pcp") val percentChangeSinceLastClosing: Double?,
+    @SerializedName("ltr") val stockExchange: String?,
+    @SerializedName("ltp") val lastDealPrice: Double?,
+    @SerializedName("chg") val priceChangeSinceLastClosing: Double?,
     @SerializedName("rev") val rev: String? = null,
 )
