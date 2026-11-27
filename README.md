@@ -8,3 +8,5 @@
 4. Flash a background for the last updated pcp for 1 sec
 5. Empty state while subscribing to websocket, similar to tradernet app
 6. Error handling is only implemented for fetching top 30 stocks, not websocket connection errors
+
+![Demo](screen_record.gif)
